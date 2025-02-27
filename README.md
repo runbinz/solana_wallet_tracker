@@ -21,5 +21,8 @@ This is a Solana Portfolio Tracker application built with [Next.js](https://next
   - [Gin](https://github.com/gin-gonic/gin)
   - [Solana Go SDK](https://github.com/gagliardetto/solana-go)
 
+- **Cursor Description**:
+  - I'm creating a Solana Token Portfolio Tracker. I've set up the directories. I am coding in golang, and using golang dependencies like solana-golang and gin.
+
 # No License
 - Feel free to use any of the code :)
