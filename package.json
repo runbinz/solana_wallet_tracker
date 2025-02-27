@@ -1,0 +1,13 @@
+{
+  "name": "portfolio-tracker",
+  "version": "1.0.0",
+  "description": "Solana Portfolio Tracker",
+  "scripts": {
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && go run cmd/server/main.go",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
