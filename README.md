@@ -22,3 +22,4 @@ This is a Solana Portfolio Tracker application built with [Next.js](https://next
   - [Solana Go SDK](https://github.com/gagliardetto/solana-go)
 
 # No License
+- Feel free to use any of the code :)
