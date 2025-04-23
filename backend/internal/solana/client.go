@@ -81,13 +81,13 @@ func (c *Client) GetTokenAccounts(walletAddress string) (*models.Portfolio, erro
 		fmt.Printf("Error fetching SOL price: %v\n", err)
 		solPrice = 0
 	}
-	solValue := solBalance * solPrice // Temporary hardcoded SOL price of $20
+	solValue := solBalance * solPrice
 
 	portfolio.Tokens = append(portfolio.Tokens, models.TokenHolding{
 		TokenMint:    "So11111111111111111111111111111111111111112", // Native SOL mint address
 		Symbol:       "SOL",
 		Balance:      solBalance,
-		CurrentPrice: solPrice, // Hardcoded for now
+		CurrentPrice: solPrice,
 		Value:        solValue,
 	})
 

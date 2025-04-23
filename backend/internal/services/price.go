@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"portfolio-tracker/internal/models"
 	"strconv"
 	"time"
 )
@@ -12,12 +14,6 @@ import (
 type PriceService struct {
 	client *http.Client
 	cache  *PriceCache
-}
-
-type CoinCapResponse struct {
-	Data struct {
-		PriceUSD string `json:"priceUsd"`
-	} `json:"data"`
 }
 
 // NewPriceService creates a new price service instance
@@ -45,22 +41,34 @@ func (s *PriceService) GetTokenPrice(symbol string) (float64, error) {
 
 	if symbol == "So11111111111111111111111111111111111111112" {
 		fmt.Println("Fetching SOL price from CoinCap...")
-		url := "https://api.coincap.io/v2/assets/solana"
+		CoinCapApiKey := os.Getenv("CoinCapApi")
+		if CoinCapApiKey == "" {
+			fmt.Println("CoinCap API key not found in environment variables")
+			return 0, fmt.Errorf("CoinCap API key not found")
+		}
+		url := "https://rest.coincap.io/v3/assets/solana"
 
-		resp, err := s.client.Get(url)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			fmt.Printf("HTTP request failed: %v\n", err)
+			return 0, err
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", CoinCapApiKey))
+
+		resp, err := s.client.Do(req)
 		if err != nil {
 			fmt.Printf("HTTP request failed: %v\n", err)
 			return 0, err
 		}
 		defer resp.Body.Close()
 
-		var coinCapResp CoinCapResponse
+		var coinCapResp models.CoinCapResponse
 		if err := json.NewDecoder(resp.Body).Decode(&coinCapResp); err != nil {
 			fmt.Printf("JSON decode error: %v\n", err)
 			return 0, err
 		}
 
-		price, err := strconv.ParseFloat(coinCapResp.Data.PriceUSD, 64)
+		price, err := strconv.ParseFloat(coinCapResp.Data.PriceUsd, 64)
 		if err != nil {
 			fmt.Printf("Price parse error: %v\n", err)
 			return 0, err
