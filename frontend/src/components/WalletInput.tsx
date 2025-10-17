@@ -17,7 +17,7 @@ export default function WalletInput({ onSubmit, isLoading }: WalletInputProps) {
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-white mb-2">Enter Wallet Address</h2>
-        <p className="text-purple-200">Track your Solana portfolio in real-time</p>
+        <p className="text-purple-200">Track your Solana portfolio in real time</p>
       </div>
       
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
