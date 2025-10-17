@@ -23,13 +23,17 @@ type Config struct {
 //   - *Config: Pointer to populated Config struct
 //   - error: Any error encountered during loading
 func LoadConfig() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
+	_ = godotenv.Load()
 
 	return &Config{
-		SolanaRPCURL: os.Getenv("SOLANA_RPC_URL"),
-		Port:         os.Getenv("PORT"),
+		SolanaRPCURL: getEnvOrDefault("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com"),
+		Port:         getEnvOrDefault("PORT", "8080"),
 	}, nil
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

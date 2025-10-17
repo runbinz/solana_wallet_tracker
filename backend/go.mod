@@ -1,6 +1,6 @@
 module portfolio-tracker
 
-go 1.24.0
+go 1.23.0
 
 require (
 	github.com/gagliardetto/solana-go v1.12.0
