@@ -1,6 +1,48 @@
+# Node modules
 node_modules
-backend/.env
+frontend/node_modules
+
+# Environment files (ALL LEVELS)
 .env
-.DS_Store
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+
+# Build outputs
 frontend/.next
+frontend/out
+frontend/.next/
+backend/bin
+backend/server
+backend/*.exe
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Temporary
+tmp/
+temp/
+.cache/
+
+# Go specific
+*.test
+*.out
+go.work
+go.work.sum
