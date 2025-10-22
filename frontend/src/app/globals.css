@@ -2,12 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --solana-purple: #9945FF;
+    --solana-green: #14F195;
+    --solana-cyan: #00D18C;
+  }
+}
+
 @layer utilities {
   .animation-delay-2000 {
     animation-delay: 2s;
   }
   .animation-delay-4000 {
     animation-delay: 4s;
+  }
+  .solana-gradient {
+    background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+  }
+  .solana-gradient-text {
+    background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
