@@ -1,2 +1,6 @@
-node_modulesbackend/.env
+node_modules
+backend/.env
 .env
+.DS_Store
+frontend/.next
+*.log
