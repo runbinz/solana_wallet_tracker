@@ -1,35 +1,38 @@
 import Portfolio from '../components/Portfolio';
+import AppShell from '../components/AppShell';
+import AmbientScene from '../components/AmbientScene';
 import { Wallet } from 'lucide-react';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] relative overflow-hidden">
-      {/* Animated background elements*/}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-[#9945FF] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#14F195] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#00D18C] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    <AppShell>
+      <main className="relative min-h-screen overflow-hidden bg-[var(--page-bg)] transition-colors duration-300">
+        <AmbientScene />
 
-      {/* Navigation */}
-      <nav className="relative bg-white/10 backdrop-blur-md border-b border-white/20 p-6 mb-8">
-        <div className="container mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 solana-gradient rounded-lg flex items-center justify-center transform rotate-6 shadow-lg">
-              <Wallet className="w-6 h-6 text-white transform -rotate-6" />
+        <nav className="relative z-10 border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-5 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 rotate-6 items-center justify-center rounded-lg shadow-lg shadow-[#9945FF]/25 solana-gradient">
+                <Wallet className="h-6 w-6 -rotate-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)] sm:text-2xl">
+                  Solana Portfolio Tracker
+                </h1>
+                <p className="text-sm text-[var(--text-muted)]">One address at a time</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Solana Portfolio Tracker</h1>
-              <p className="text-gray-300 text-sm">Track your SOL and tokens in real time</p>
+            <div className="hidden items-center gap-2 rounded-full border border-[var(--nav-border)] bg-[var(--surface-soft)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] shadow-sm backdrop-blur md:flex">
+              <span className="h-2 w-2 rounded-full bg-[#14F195] shadow-[0_0_16px_rgba(20,241,149,0.8)]" />
+              Live query mode
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 pb-12 relative">
-        <Portfolio />
-      </div>
-    </main>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 pb-14 pt-8 sm:pt-10">
+          <Portfolio />
+        </div>
+      </main>
+    </AppShell>
   );
 }
