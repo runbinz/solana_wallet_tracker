@@ -2,8 +2,11 @@ package main
 
 import (
 	"log"
+	"time"
+
 	"portfolio-tracker/config"
 	"portfolio-tracker/internal/api"
+	"portfolio-tracker/internal/services"
 	"portfolio-tracker/internal/solana"
 )
 
@@ -20,11 +23,9 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Initialize Solana client
 	solanaClient := solana.NewClient(cfg.SolanaRPCURL)
-
-	// Setup router
-	router := api.SetupRouter(solanaClient)
+	portfolioCache := services.NewPortfolioCache(30 * time.Second)
+	router := api.SetupRouter(solanaClient, portfolioCache)
 
 	server := api.NewServer(router, cfg.Port)
 	if err := server.Start(); err != nil {

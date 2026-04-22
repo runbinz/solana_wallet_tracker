@@ -37,7 +37,8 @@ func ParseTokenAccount(data []byte) (*models.TokenHolding, error) {
 
 	return &models.TokenHolding{
 		TokenMint: mintAddr.String(),
-		Symbol:    "Unknown", // Default value
+		Symbol:    "Unknown",
+		Decimals:  int(decimals),
 		Balance:   balance,
 	}, nil
 }

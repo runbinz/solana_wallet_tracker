@@ -4,153 +4,215 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"math"
+	"net"
+	"net/http"
+	"time"
+
 	"portfolio-tracker/internal/models"
 	"portfolio-tracker/internal/services"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
+	"github.com/klauspost/compress/gzhttp"
 )
 
+const nativeSOLMint = "So11111111111111111111111111111111111111112"
+
 // Client wraps the Solana RPC client and provides high-level operations
-// for interacting with the Solana blockchain
+// for interacting with the Solana blockchain.
 type Client struct {
-	rpcClient    *rpc.Client            // Solana RPC client for blockchain interaction
-	priceService *services.PriceService // Service for fetching token prices
+	rpcClient *rpc.Client
+	jupiter   *services.JupiterClient
 }
 
-// NewClient creates a new Solana client instance
-// Parameters:
-//   - rpcURL: URL of the Solana RPC endpoint
-//
-// Returns: initialized Solana client
+// NewClient creates a new Solana client instance with bounded HTTP timeouts and gzip transport.
 func NewClient(rpcURL string) *Client {
+	httpClient := &http.Client{
+		Timeout: 45 * time.Second,
+		Transport: gzhttp.Transport(&http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   15 * time.Second,
+				KeepAlive: 60 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConnsPerHost:   9,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   12 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}),
+	}
+	rpcUnderlying := jsonrpc.NewClientWithOpts(rpcURL, &jsonrpc.RPCClientOpts{
+		HTTPClient: httpClient,
+	})
 	return &Client{
-		rpcClient:    rpc.New(rpcURL), // Connect to Solana network
-		priceService: services.NewPriceService(),
+		rpcClient: rpc.NewWithCustomRPCClient(rpcUnderlying),
+		jupiter:   services.NewJupiterClient(),
 	}
 }
 
-// getTokenMetadata fetches metadata for a given token mint address
-// Parameters:
-//   - mint: token mint address as string
-//
-// Returns: token symbol and any error encountered
-func (c *Client) getTokenMetadata(mint string) (string, error) {
-	return "SOL Token", nil
+type mintAgg struct {
+	rawAmount uint64
+	decimals  uint8
 }
 
-// GetTokenAccounts fetches all token accounts for a wallet address
-// This method:
-// 1. Validates the wallet address
-// 2. Fetches all token accounts owned by the wallet
-// 3. Parses token data and fetches current prices
-// 4. Calculates total portfolio value
-// Parameters:
-//   - walletAddress: Solana wallet address as base58 string
-//
-// Returns: Portfolio object containing token holdings and total value
+func parseTokenAccount(data []byte) (mint solana.PublicKey, amount uint64, decimals uint8, ok bool) {
+	if len(data) < 165 {
+		return solana.PublicKey{}, 0, 0, false
+	}
+	mint = solana.PublicKeyFromBytes(data[0:32])
+	decimals = uint8(data[44])
+	amount = binary.LittleEndian.Uint64(data[64:72])
+	return mint, amount, decimals, true
+}
+
+func mergeTokenAccounts(values []*rpc.TokenAccount) map[string]*mintAgg {
+	byMint := make(map[string]*mintAgg)
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		data := v.Account.Data.GetBinary()
+		mint, amount, decimals, ok := parseTokenAccount(data)
+		if !ok {
+			continue
+		}
+		key := mint.String()
+		if cur, exists := byMint[key]; exists {
+			cur.rawAmount += amount
+			continue
+		}
+		byMint[key] = &mintAgg{rawAmount: amount, decimals: decimals}
+	}
+	return byMint
+}
+
+func (c *Client) fetchMergedTokenBalances(ctx context.Context, owner solana.PublicKey) (map[string]*mintAgg, error) {
+	merged := make(map[string]*mintAgg)
+
+	for _, programID := range []solana.PublicKey{solana.TokenProgramID, solana.Token2022ProgramID} {
+		pid := programID
+		accounts, err := rpcRetry(ctx, 3, func() (*rpc.GetTokenAccountsResult, error) {
+			return c.rpcClient.GetTokenAccountsByOwner(
+				ctx,
+				owner,
+				&rpc.GetTokenAccountsConfig{ProgramId: &pid},
+				&rpc.GetTokenAccountsOpts{},
+			)
+		})
+		if err != nil {
+			return nil, err
+		}
+		if accounts == nil {
+			continue
+		}
+		for mint, agg := range mergeTokenAccounts(accounts.Value) {
+			if cur, ok := merged[mint]; ok {
+				cur.rawAmount += agg.rawAmount
+				continue
+			}
+			cp := *agg
+			merged[mint] = &cp
+		}
+	}
+	return merged, nil
+}
+
+// GetTokenAccounts fetches native SOL plus SPL / Token-2022 holdings and USD values via Jupiter.
 func (c *Client) GetTokenAccounts(walletAddress string) (*models.Portfolio, error) {
-	// Convert string address to PublicKey
+	ctx := context.Background()
+
 	pubKey, err := solana.PublicKeyFromBase58(walletAddress)
 	if err != nil {
 		return nil, errors.New("invalid wallet address")
 	}
 
-	// Initialize portfolio
 	portfolio := &models.Portfolio{
 		WalletAddress: walletAddress,
 		Tokens:        make([]models.TokenHolding, 0),
 	}
 
-	// // Add this new code here to get SOL balance
-	balance, err := c.rpcClient.GetBalance(
-		context.Background(),
-		pubKey,
-		rpc.CommitmentFinalized,
-	)
+	balance, err := rpcRetry(ctx, 3, func() (*rpc.GetBalanceResult, error) {
+		return c.rpcClient.GetBalance(ctx, pubKey, rpc.CommitmentFinalized)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Add SOL to portfolio
-	solBalance := float64(balance.Value) / 1e9 // Convert lamports to SOL
-	solPrice, err := c.priceService.GetTokenPrice("So11111111111111111111111111111111111111112")
+	splByMint, err := c.fetchMergedTokenBalances(ctx, pubKey)
 	if err != nil {
-		fmt.Printf("Error fetching SOL price: %v\n", err)
-		solPrice = 0
+		return nil, err
 	}
-	solValue := solBalance * solPrice
+
+	mintsForQuotes := []string{nativeSOLMint}
+	for m := range splByMint {
+		mintsForQuotes = append(mintsForQuotes, m)
+	}
+
+	quotes, err := c.jupiter.FetchUSDQuotes(mintsForQuotes)
+	if err != nil {
+		quotes = map[string]services.MintQuote{}
+	}
+
+	solBalance := float64(balance.Value) / 1e9
+	solQuote := quotes[nativeSOLMint]
+	solValue := solBalance * solQuote.USDPrice
 
 	portfolio.Tokens = append(portfolio.Tokens, models.TokenHolding{
-		TokenMint:    "So11111111111111111111111111111111111111112", // Native SOL mint address
-		Symbol:       "SOL",
-		Balance:      solBalance,
-		CurrentPrice: solPrice,
-		Value:        solValue,
+		TokenMint:      nativeSOLMint,
+		Symbol:         "SOL",
+		Name:           "Solana",
+		LogoURI:        "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+		Decimals:       9,
+		Balance:        solBalance,
+		CurrentPrice:   solQuote.USDPrice,
+		Value:          solValue,
+		PriceSource:    "jupiter_price_v3",
+		LastPriceAt:    solQuote.FetchedAt,
+		PriceChange24h: solQuote.PriceChange24h,
 	})
+	totalValue := solValue
 
-	totalValue := solValue // Initialize totalValue with SOL value
-
-	// Get token accounts owned by the wallet
-	accounts, err := c.rpcClient.GetTokenAccountsByOwner(
-		context.Background(),
-		pubKey,
-		&rpc.GetTokenAccountsConfig{
-			ProgramId: &solana.TokenProgramID,
-		},
-		&rpc.GetTokenAccountsOpts{},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, account := range accounts.Value {
-		// Get token data from the raw account data
-		data := account.Account.Data.GetBinary()
-
-		// Token accounts have a minimum size
-		if len(data) < 165 {
+	for mintStr, agg := range splByMint {
+		if mintStr == nativeSOLMint {
 			continue
 		}
+		bal := float64(agg.rawAmount) / math.Pow10(int(agg.decimals))
 
-		// Extract token data from account
-		mintAddr := solana.PublicKeyFromBytes(data[0:32])
-		amount := binary.LittleEndian.Uint64(data[64:72])
-		decimals := uint8(data[44])
-
-		// Get token balance (consider decimals)
-		balance := float64(amount) / math.Pow10(int(decimals))
-
-		// Get token symbol from metadata
-		symbol, err := c.getTokenMetadata(mintAddr.String())
-		if err != nil {
-			symbol = "Unknown"
+		sym, name, logo, _, metaOK := c.jupiter.LookupMetadata(mintStr)
+		if !metaOK || sym == "" {
+			sym = shortMint(mintStr)
 		}
+		decimals := int(agg.decimals)
 
-		// Get price for the token
-		price, err := c.priceService.GetTokenPrice(mintAddr.String())
-		if err != nil {
-			price = 0
-		}
+		q := quotes[mintStr]
+		val := bal * q.USDPrice
+		totalValue += val
 
-		value := balance * price
-
-		// Create token holding
-		token := models.TokenHolding{
-			TokenMint:    mintAddr.String(),
-			Symbol:       symbol,
-			Balance:      balance,
-			CurrentPrice: price,
-			Value:        value,
-		}
-
-		totalValue += value
-		portfolio.Tokens = append(portfolio.Tokens, token)
-
+		portfolio.Tokens = append(portfolio.Tokens, models.TokenHolding{
+			TokenMint:      mintStr,
+			Symbol:         sym,
+			Name:           name,
+			LogoURI:        logo,
+			Decimals:       decimals,
+			Balance:        bal,
+			CurrentPrice:   q.USDPrice,
+			Value:          val,
+			PriceSource:    "jupiter_price_v3",
+			LastPriceAt:    q.FetchedAt,
+			PriceChange24h: q.PriceChange24h,
+		})
 	}
 
 	portfolio.TotalValue = totalValue
 	return portfolio, nil
+}
+
+func shortMint(m string) string {
+	if len(m) <= 8 {
+		return m
+	}
+	return m[:4] + "…" + m[len(m)-4:]
 }

@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"net/http"
+	"portfolio-tracker/internal/services"
 	"portfolio-tracker/internal/solana"
 
 	"github.com/gin-gonic/gin"
@@ -11,17 +12,15 @@ import (
 // PortfolioHandler manages HTTP requests related to portfolio operations
 // It encapsulates the Solana client dependency for portfolio-related functionality
 type PortfolioHandler struct {
-	solanaClient *solana.Client // Solana client for blockchain interactions
+	solanaClient *solana.Client
+	cache        *services.PortfolioCache
 }
 
 // NewPortfolioHandler creates a new portfolio handler instance
-// Parameters:
-//   - solanaClient: initialized Solana client for blockchain operations
-//
-// Returns: configured PortfolioHandler instance
-func NewPortfolioHandler(solanaClient *solana.Client) *PortfolioHandler {
+func NewPortfolioHandler(solanaClient *solana.Client, cache *services.PortfolioCache) *PortfolioHandler {
 	return &PortfolioHandler{
 		solanaClient: solanaClient,
+		cache:        cache,
 	}
 }
 
@@ -41,13 +40,21 @@ func (h *PortfolioHandler) GetPortfolio(c *gin.Context) {
 		return
 	}
 
-	// Use Solana client to fetch token accounts
+	if h.cache != nil {
+		if p, ok := h.cache.Get(address); ok {
+			c.JSON(http.StatusOK, p)
+			return
+		}
+	}
+
 	portfolio, err := h.solanaClient.GetTokenAccounts(address)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Return successful response with portfolio
+	if h.cache != nil {
+		h.cache.Set(address, portfolio)
+	}
 	c.JSON(http.StatusOK, portfolio)
 }
