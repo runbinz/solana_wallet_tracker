@@ -28,7 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
         whileHover={{ y: -2, scale: 1.06 }}
         whileTap={{ scale: 0.92 }}
-        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full glass shadow-card transition-all duration-300 hover:shadow-glow-purple group"
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-md glass shadow-card transition-all duration-300 hover:shadow-glow-purple group"
         aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
         title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
       >

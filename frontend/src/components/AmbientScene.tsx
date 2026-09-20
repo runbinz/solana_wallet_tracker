@@ -52,8 +52,8 @@ export default function AmbientScene() {
 
     const colorFor = (hue: number, alpha: number) => {
       if (hue === 0) return `rgba(153, 69, 255, ${alpha})`;
-      if (hue === 1) return `rgba(20, 241, 149, ${alpha})`;
-      return `rgba(56, 189, 248, ${alpha})`;
+      if (hue === 1) return `rgba(139, 92, 246, ${alpha})`;
+      return `rgba(167, 139, 250, ${alpha})`;
     };
 
     const draw = () => {
@@ -68,7 +68,7 @@ export default function AmbientScene() {
       /* Radial spotlight */
       const spotlight = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, Math.max(width, height) * 0.6);
       spotlight.addColorStop(0, isLight ? 'rgba(153, 69, 255, 0.03)' : 'rgba(153, 69, 255, 0.06)');
-      spotlight.addColorStop(0.4, isLight ? 'rgba(20, 241, 149, 0.02)' : 'rgba(20, 241, 149, 0.03)');
+      spotlight.addColorStop(0.4, isLight ? 'rgba(139, 92, 246, 0.02)' : 'rgba(139, 92, 246, 0.03)');
       spotlight.addColorStop(1, 'transparent');
       ctx.fillStyle = spotlight;
       ctx.fillRect(0, 0, width, height);

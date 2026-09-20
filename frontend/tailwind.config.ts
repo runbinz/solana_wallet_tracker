@@ -24,8 +24,8 @@ export default {
         'text-muted': 'var(--text-muted)',
         accent: {
           purple: '#9945FF',
-          green: '#14F195',
-          cyan: '#38bdf8',
+          violet: '#8B5CF6',
+          lavender: '#A78BFA',
           rose: '#f43f5e',
           amber: '#f59e0b',
         },
@@ -37,14 +37,19 @@ export default {
       boxShadow: {
         'card': 'var(--card-shadow)',
         'glow-purple': '0 0 40px -8px var(--glow-purple)',
-        'glow-green': '0 0 40px -8px var(--glow-green)',
+        'glow-secondary': '0 0 40px -8px var(--glow-secondary)',
       },
       transitionTimingFunction: {
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
       borderRadius: {
-        'xl': '0.875rem',
-        '2xl': '1.25rem',
+        DEFAULT: '0.25rem',
+        'sm': '0.125rem',
+        'md': '0.25rem',
+        'lg': '0.375rem',
+        'xl': '0.5rem',
+        '2xl': '0.5rem',
+        'full': '9999px',
       },
     },
   },

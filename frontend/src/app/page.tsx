@@ -1,7 +1,6 @@
 import Portfolio from '../components/Portfolio';
 import AppShell from '../components/AppShell';
 import AmbientScene from '../components/AmbientScene';
-import { Wallet } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -12,22 +11,17 @@ export default function Home() {
         {/* ── Navigation ── */}
         <nav className="relative z-10 border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-4 backdrop-blur-2xl sm:py-5">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl solana-gradient shadow-lg animate-glow-ring">
-                <Wallet className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] sm:text-xl">
-                  Solana Portfolio Tracker
-                </h1>
-                <p className="text-xs text-[var(--text-muted)]">Real-time wallet dashboard</p>
-              </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] sm:text-xl">
+                Solana Portfolio Tracker
+              </h1>
+              <p className="text-xs text-[var(--text-muted)]">Real-time wallet dashboard</p>
             </div>
 
-            <div className="hidden items-center gap-2.5 rounded-full border border-[var(--nav-border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] backdrop-blur-md md:flex">
+            <div className="hidden items-center gap-2.5 rounded-md border border-[var(--nav-border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] backdrop-blur-md md:flex">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-[#14F195] opacity-75 animate-ping" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#14F195] shadow-[0_0_8px_rgba(20,241,149,0.6)]" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-purple opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-purple shadow-[0_0_8px_rgba(153,69,255,0.6)]" />
               </span>
               Live on Mainnet
             </div>
