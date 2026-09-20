@@ -160,26 +160,36 @@ func (c *Client) GetTokenAccounts(walletAddress string) (*models.Portfolio, erro
 	solQuote := quotes[nativeSOLMint]
 	solValue := solBalance * solQuote.USDPrice
 
-	portfolio.Tokens = append(portfolio.Tokens, models.TokenHolding{
-		TokenMint:      nativeSOLMint,
-		Symbol:         "SOL",
-		Name:           "Solana",
-		LogoURI:        "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
-		Decimals:       9,
-		Balance:        solBalance,
-		CurrentPrice:   solQuote.USDPrice,
-		Value:          solValue,
-		PriceSource:    "jupiter_price_v3",
-		LastPriceAt:    solQuote.FetchedAt,
-		PriceChange24h: solQuote.PriceChange24h,
-	})
+	if solBalance >= 1e-8 {
+		portfolio.Tokens = append(portfolio.Tokens, models.TokenHolding{
+			TokenMint:      nativeSOLMint,
+			Symbol:         "SOL",
+			Name:           "Solana",
+			LogoURI:        "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+			Decimals:       9,
+			Balance:        solBalance,
+			CurrentPrice:   solQuote.USDPrice,
+			Value:          solValue,
+			PriceSource:    "jupiter_price_v3",
+			LastPriceAt:    solQuote.FetchedAt,
+			PriceChange24h: solQuote.PriceChange24h,
+		})
+	}
 	totalValue := solValue
 
 	for mintStr, agg := range splByMint {
 		if mintStr == nativeSOLMint {
 			continue
 		}
+		if agg.rawAmount == 0 {
+			continue
+		}
 		bal := float64(agg.rawAmount) / math.Pow10(int(agg.decimals))
+
+		// Skip dust: balance too small to display meaningfully (< 0.00000001)
+		if bal < 1e-8 {
+			continue
+		}
 
 		sym, name, logo, _, metaOK := c.jupiter.LookupMetadata(mintStr)
 		if !metaOK || sym == "" {
