@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const STORAGE_KEY = 'swt-theme';
 
@@ -26,16 +26,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <motion.button
         type="button"
         onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-        whileHover={{ y: -2, scale: 1.04 }}
-        whileTap={{ scale: 0.96 }}
-        className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border shadow-lg backdrop-blur-md transition ${
-          theme === 'light'
-            ? 'border-slate-300/80 bg-white/90 text-slate-800 hover:bg-white'
-            : 'border-white/20 bg-white/10 text-white hover:bg-white/20'
-        }`}
+        whileHover={{ y: -2, scale: 1.06 }}
+        whileTap={{ scale: 0.92 }}
+        className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full glass shadow-card transition-all duration-300 hover:shadow-glow-purple group"
         aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+        title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
       >
-        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        <AnimatePresence mode="wait" initial={false}>
+          {theme === 'dark' ? (
+            <motion.div
+              key="sun"
+              initial={{ opacity: 0, rotate: -90, scale: 0.6 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 90, scale: 0.6 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Sun className="h-5 w-5 text-amber-400" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="moon"
+              initial={{ opacity: 0, rotate: 90, scale: 0.6 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: -90, scale: 0.6 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Moon className="h-5 w-5 text-slate-600" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.button>
       {children}
     </>

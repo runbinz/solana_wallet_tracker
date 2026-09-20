@@ -19,7 +19,17 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
-const PALETTE = ['#9945FF', '#14F195', '#00D18C', '#38bdf8', '#f472b6', '#fbbf24', '#a78bfa', '#fb7185'];
+/* Harmonious palette — analogous rotation from purple through cyan/green */
+const PALETTE = [
+  '#9945FF', // purple (primary)
+  '#7C3AED', // violet
+  '#14F195', // green (secondary)
+  '#06B6D4', // cyan
+  '#38BDF8', // sky
+  '#818CF8', // indigo
+  '#A78BFA', // lavender
+  '#34D399', // emerald
+];
 
 function fmtUsd(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -37,8 +47,20 @@ function pctChangeDisplay(ratio: number | undefined) {
   return `${sign}${pct.toFixed(2)}%`;
 }
 
+function relativeTime(unixSeconds: number): string {
+  const diff = Math.floor(Date.now() / 1000) - unixSeconds;
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-[var(--surface-soft)] ${className ?? ''}`} />;
+  return (
+    <div
+      className={`animate-shimmer rounded-2xl bg-[var(--surface-soft)] ${className ?? ''}`}
+    />
+  );
 }
 
 export default function Portfolio() {
@@ -140,19 +162,26 @@ export default function Portfolio() {
       />
 
       <AnimatePresence mode="wait">
+        {/* ── Error ── */}
         {error && (
           <motion.div
             key="error"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="flex items-center gap-3 rounded-lg border border-red-500/50 bg-red-500/20 px-6 py-4 text-[var(--text-primary)] backdrop-blur-md"
+            className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-6 py-4 text-[var(--text-primary)] backdrop-blur-xl"
           >
-            <AlertCircle className="h-6 w-6 shrink-0" />
-            <span>{error}</span>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Something went wrong</p>
+              <p className="text-sm text-[var(--text-secondary)]">{error}</p>
+            </div>
           </motion.div>
         )}
 
+        {/* ── Skeleton Loading ── */}
         {isLoading && (
           <motion.div
             key="loading"
@@ -161,16 +190,17 @@ export default function Portfolio() {
             exit={{ opacity: 0, y: -8 }}
             className="space-y-6"
           >
-            <SkeletonBlock className="h-40 w-full" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <SkeletonBlock className="h-36" />
-              <SkeletonBlock className="h-36" />
-              <SkeletonBlock className="h-36" />
-              <SkeletonBlock className="h-36" />
+            <SkeletonBlock className="h-44 w-full" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <SkeletonBlock className="h-40" />
+              <SkeletonBlock className="h-40" />
+              <SkeletonBlock className="h-40" />
             </div>
+            <SkeletonBlock className="h-48 w-full" />
           </motion.div>
         )}
 
+        {/* ── Portfolio Data ── */}
         {portfolio && !isLoading && (
           <motion.div
             key="portfolio"
@@ -180,251 +210,348 @@ export default function Portfolio() {
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-6"
           >
+            {/* ── Summary Card ── */}
             <motion.div
-              className="rounded-lg p-px shadow-2xl shadow-black/10 solana-gradient"
-              whileHover={{ y: -3 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+              className="relative overflow-hidden rounded-2xl shadow-card"
+              whileHover={{ y: -2 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             >
-              <div className="rounded-lg border border-[var(--nav-border)] bg-[var(--surface)] p-6 backdrop-blur-xl sm:p-8">
-                <div className="mb-2 flex items-center justify-between gap-4">
-                  <h2 className="text-lg font-medium text-[var(--text-muted)]">Total Portfolio Value</h2>
-                  <div className="flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm text-[#14F195]">
-                    <TrendingUp className="h-4 w-4" />
+              {/* Gradient border top */}
+              <div className="h-1 w-full solana-gradient" />
+
+              <div className="glass rounded-b-2xl p-6 sm:p-8">
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    Total Portfolio Value
+                  </h2>
+                  <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-[#14F195]">
+                    <TrendingUp className="h-3.5 w-3.5" />
                     <span>Live</span>
                   </div>
                 </div>
-                <p className="mb-2 text-4xl font-bold tracking-tight solana-gradient-text sm:text-6xl">
+
+                <p className="mb-1 text-4xl font-extrabold tracking-tight solana-gradient-text sm:text-5xl lg:text-6xl">
                   ${fmtUsd(portfolio.total_value)}
                 </p>
-                <p className="text-[var(--text-muted)]">
-                  {portfolio.tokens.length} {portfolio.tokens.length === 1 ? 'asset' : 'assets'}
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {portfolio.tokens.length} {portfolio.tokens.length === 1 ? 'asset' : 'assets'} tracked
                 </p>
 
-              {segments.length > 0 && (
-                <div className="mt-6">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                    Allocation
-                  </p>
-                  <div className="flex h-3 w-full overflow-hidden rounded-full bg-[var(--surface-soft)]">
-                    {segments.map((s) => (
-                      <motion.div
-                        key={s.mint}
-                        initial={{ flexGrow: 0 }}
-                        animate={{ flexGrow: Math.max(s.pct, 0.02) }}
-                        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                        style={{
-                          flexShrink: 1,
-                          flexBasis: 0,
-                          minWidth: 2,
-                          backgroundColor: s.color,
-                        }}
-                        className="transition-all"
-                        title={`${s.label} ${s.pct.toFixed(1)}%`}
-                      />
-                    ))}
+                {/* ── Allocation Bar ── */}
+                {segments.length > 0 && (
+                  <div className="mt-8">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                      Allocation
+                    </p>
+                    <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
+                      {segments.map((s) => (
+                        <motion.div
+                          key={s.mint}
+                          initial={{ flexGrow: 0, opacity: 0 }}
+                          animate={{ flexGrow: Math.max(s.pct, 0.5), opacity: 1 }}
+                          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                          style={{
+                            flexShrink: 1,
+                            flexBasis: 0,
+                            minWidth: 3,
+                            backgroundColor: s.color,
+                            borderRadius: '9999px',
+                          }}
+                          title={`${s.label} — ${s.pct.toFixed(1)}%`}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-[var(--text-secondary)]">
+                      {segments.map((s) => (
+                        <span key={s.mint} className="flex items-center gap-1.5">
+                          <span
+                            className="h-2 w-2 rounded-full shadow-sm"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          <span className="font-medium">{s.label}</span>
+                          <span className="text-[var(--text-muted)]">{s.pct.toFixed(1)}%</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--text-muted)]">
-                    {segments.map((s, i) => (
-                      <span key={s.mint} className="flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: PALETTE[i % PALETTE.length] }} />
-                        {s.label} {s.pct.toFixed(1)}%
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* ── Token Cards ── */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {portfolio.tokens.map((token, index) => {
                 const change = pctChangeDisplay(token.price_change_24h);
                 const changePositive = (token.price_change_24h ?? 0) >= 0;
+                const accentColor = PALETTE[index % PALETTE.length];
                 return (
                   <motion.div
                     key={token.token_mint}
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.045, duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                    whileHover={{ y: -4 }}
-                    className="group rounded-lg border border-[var(--nav-border)] bg-[var(--surface)] p-5 shadow-lg shadow-black/5 backdrop-blur-xl transition duration-300 hover:border-[#9945FF]/40 hover:shadow-xl hover:shadow-[#9945FF]/15 sm:p-6"
+                    transition={{
+                      delay: index * 0.04,
+                      duration: 0.45,
+                      ease: [0.22, 1, 0.36, 1],
+                    }}
+                    whileHover={{ y: -3 }}
+                    className="group relative overflow-hidden rounded-2xl glass shadow-card transition-all duration-300 hover:shadow-xl"
                   >
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      {token.logo_uri ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={token.logo_uri}
-                          alt=""
-                          className="h-12 w-12 rounded-full border border-white/10 object-cover shadow-lg"
-                          width={48}
-                          height={48}
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white shadow-lg solana-gradient">
-                          {token.symbol.charAt(0)}
+                    {/* Left accent stripe */}
+                    <div
+                      className="absolute inset-y-0 left-0 w-1 transition-all duration-300 group-hover:w-1.5"
+                      style={{ backgroundColor: accentColor }}
+                    />
+
+                    <div className="p-5 pl-5 sm:p-6 sm:pl-6">
+                      {/* Header: logo + name | change badge */}
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {token.logo_uri ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={token.logo_uri}
+                              alt=""
+                              className="h-11 w-11 rounded-full border-2 object-cover shadow-md"
+                              style={{ borderColor: `${accentColor}40` }}
+                              width={44}
+                              height={44}
+                            />
+                          ) : (
+                            <div
+                              className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white shadow-md"
+                              style={{
+                                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}99)`,
+                              }}
+                            >
+                              {token.symbol.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-base font-bold text-[var(--text-primary)]">
+                              {token.symbol}
+                            </p>
+                            {token.name && (
+                              <p className="text-xs text-[var(--text-muted)] leading-tight">
+                                {token.name}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div>
-                        <p className="text-lg font-bold text-[var(--text-primary)]">{token.symbol}</p>
-                        {token.name && <p className="text-sm text-[var(--text-muted)]">{token.name}</p>}
-                        <p className="text-sm text-[var(--text-muted)]">
-                          {token.balance.toLocaleString('en-US', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: Math.min(8, Math.max(2, token.decimals ?? 4)),
-                          })}
-                        </p>
+
+                        {change && (
+                          <span
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                              changePositive
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                : 'border-rose-500/30 bg-rose-500/10 text-rose-400'
+                            }`}
+                          >
+                            {change}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Mint address */}
+                      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+                        <code className="rounded-md bg-[var(--surface-soft)] px-2 py-1 font-mono text-xs text-[var(--text-muted)]">
+                          {shortMint(token.token_mint)}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => void copyMint(token.token_mint)}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]"
+                          aria-label="Copy mint address"
+                        >
+                          {copiedMint === token.token_mint ? (
+                            <Check className="h-3 w-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                        <a
+                          href={`https://solscan.io/token/${token.token_mint}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="space-y-2.5 border-t border-[var(--nav-border)] pt-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                            Value
+                          </span>
+                          <span className="text-lg font-bold text-[var(--text-primary)]">
+                            ${fmtUsd(token.value)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                            Price
+                          </span>
+                          <span className="text-sm text-[var(--text-primary)]">
+                            ${fmtUsd(token.current_price)}
+                            {token.price_source && (
+                              <span className="ml-1.5 text-xs text-[var(--text-muted)]">
+                                ({token.price_source})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                            Balance
+                          </span>
+                          <span className="text-sm font-mono text-[var(--text-secondary)]">
+                            {token.balance.toLocaleString('en-US', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: Math.min(8, Math.max(2, token.decimals ?? 4)),
+                            })}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    {change && (
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
-                          changePositive
-                            ? 'border-emerald-500/40 text-emerald-400'
-                            : 'border-rose-500/40 text-rose-400'
-                        }`}
-                      >
-                        24h {change}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
-                    <code className="rounded bg-black/10 px-2 py-1 font-mono dark:bg-white/5">{shortMint(token.token_mint)}</code>
-                    <button
-                      type="button"
-                      onClick={() => void copyMint(token.token_mint)}
-                      className="inline-flex items-center gap-1 rounded-md border border-[var(--nav-border)] px-2 py-1 transition hover:bg-[var(--surface-soft)]"
-                      aria-label="Copy mint address"
-                    >
-                      {copiedMint === token.token_mint ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                      Copy
-                    </button>
-                    <a
-                      href={`https://solscan.io/token/${token.token_mint}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md border border-[var(--nav-border)] px-2 py-1 transition hover:bg-[var(--surface-soft)]"
-                    >
-                      Solscan
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
-
-                  <div className="space-y-2 border-t border-[var(--nav-border)] pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[var(--text-muted)]">Value</span>
-                      <span className="text-lg font-bold text-[var(--text-primary)]">${fmtUsd(token.value)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[var(--text-muted)]">Price</span>
-                      <span className="text-[var(--text-primary)]">
-                        ${fmtUsd(token.current_price)}
-                        {token.price_source && (
-                          <span className="ml-2 text-xs text-[var(--text-muted)]">({token.price_source})</span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-1 scale-x-0 transform rounded-full solana-gradient transition-transform duration-300 group-hover:scale-x-100" />
                   </motion.div>
                 );
               })}
             </div>
 
+            {/* ── Empty tokens ── */}
             {portfolio.tokens.length === 0 && (
-              <div className="rounded-lg border border-[var(--nav-border)] bg-[var(--surface)] p-12 text-center backdrop-blur-xl">
-                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#9945FF]/20">
-                  <Briefcase className="h-10 w-10 text-[#9945FF]" />
+              <div className="rounded-2xl glass p-12 text-center shadow-card">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-accent-purple/15">
+                  <Briefcase className="h-10 w-10 text-accent-purple" />
                 </div>
                 <h3 className="mb-2 text-xl font-bold text-[var(--text-primary)]">No tokens found</h3>
-                <p className="text-[var(--text-muted)]">This wallet doesn&apos;t contain any tokens yet.</p>
+                <p className="text-[var(--text-secondary)]">
+                  This wallet doesn&apos;t contain any tokens yet.
+                </p>
               </div>
             )}
 
-            <div className="rounded-lg border border-[var(--nav-border)] bg-[var(--surface)] p-6 shadow-lg shadow-black/5 backdrop-blur-xl">
-              <div className="mb-4 flex items-center gap-2 text-[var(--text-primary)]">
-                <Activity className="h-5 w-5 text-[#9945FF]" />
-                <h3 className="text-lg font-semibold">Recent activity</h3>
+            {/* ── Activity Feed ── */}
+            <div className="overflow-hidden rounded-2xl glass shadow-card">
+              {/* Header */}
+              <div className="border-b border-[var(--nav-border)] px-6 py-4">
+                <div className="flex items-center gap-2.5 text-[var(--text-primary)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-purple/15">
+                    <Activity className="h-4 w-4 text-accent-purple" />
+                  </div>
+                  <h3 className="text-base font-semibold">Recent Activity</h3>
+                </div>
               </div>
-              {activityError && <p className="text-sm text-rose-400">{activityError}</p>}
-              {activityLoading && !activity && <p className="text-sm text-[var(--text-muted)]">Loading signatures...</p>}
-              {activity && activity.items.length === 0 && (
-                <p className="text-sm text-[var(--text-muted)]">No recent signatures for this address.</p>
-              )}
-              {activity && activity.items.length > 0 && (
-                <ul className="space-y-2">
-                  {activity.items.map((item, index) => (
-                    <motion.li
-                      key={item.signature}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.025, duration: 0.28 }}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--nav-border)] bg-[var(--surface-soft)] px-3 py-2 text-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <a
-                          href={item.solscan_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-xs text-[#14F195] hover:underline sm:text-sm"
-                        >
-                          {shortMint(item.signature)}
-                        </a>
-                        <div className="text-xs text-[var(--text-muted)]">
-                          slot {item.slot}
-                          {item.block_time != null && ` · ${new Date(item.block_time * 1000).toLocaleString()}`}
-                          {item.success ? ' · ok' : ' · failed'}
-                        </div>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded px-2 py-0.5 text-xs ${item.success ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}
+
+              <div className="p-5 sm:p-6">
+                {activityError && (
+                  <p className="text-sm text-rose-400">{activityError}</p>
+                )}
+                {activityLoading && !activity && (
+                  <div className="space-y-3">
+                    <SkeletonBlock className="h-14" />
+                    <SkeletonBlock className="h-14" />
+                    <SkeletonBlock className="h-14" />
+                  </div>
+                )}
+                {activity && activity.items.length === 0 && (
+                  <p className="py-4 text-center text-sm text-[var(--text-muted)]">
+                    No recent signatures for this address.
+                  </p>
+                )}
+                {activity && activity.items.length > 0 && (
+                  <ul className="space-y-2">
+                    {activity.items.map((item, index) => (
+                      <motion.li
+                        key={item.signature}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.02, duration: 0.3 }}
+                        className="group flex items-stretch overflow-hidden rounded-xl border border-[var(--nav-border)] bg-[var(--surface-soft)] transition-colors hover:bg-[var(--surface-strong)]"
                       >
-                        {item.success ? 'Success' : 'Failed'}
-                      </span>
-                    </motion.li>
-                  ))}
-                </ul>
-              )}
-              {activity?.next_before && activity.items.length > 0 && (
-                <button
-                  type="button"
-                  disabled={activityLoading}
-                  onClick={() => void fetchActivity(portfolio.wallet_address, activity.next_before)}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--nav-border)] py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-[var(--surface-soft)] disabled:opacity-50"
-                >
-                  {activityLoading ? 'Loading...' : 'Load more'}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              )}
+                        {/* Status bar */}
+                        <div
+                          className={`w-1 shrink-0 ${
+                            item.success ? 'bg-emerald-500' : 'bg-rose-500'
+                          }`}
+                        />
+
+                        <div className="flex flex-1 flex-wrap items-center justify-between gap-2 px-4 py-3">
+                          <div className="min-w-0 flex-1">
+                            <a
+                              href={item.solscan_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-xs text-accent-green transition-colors hover:text-[#14F195] hover:underline"
+                            >
+                              {shortMint(item.signature)}
+                            </a>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                              <span>slot {item.slot}</span>
+                              {item.block_time != null && (
+                                <>
+                                  <span className="opacity-40">·</span>
+                                  <span>{relativeTime(item.block_time)}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${
+                              item.success
+                                ? 'bg-emerald-500/10 text-emerald-400'
+                                : 'bg-rose-500/10 text-rose-400'
+                            }`}
+                          >
+                            {item.success ? 'Success' : 'Failed'}
+                          </span>
+                        </div>
+                      </motion.li>
+                    ))}
+                  </ul>
+                )}
+
+                {activity?.next_before && activity.items.length > 0 && (
+                  <motion.button
+                    type="button"
+                    disabled={activityLoading}
+                    onClick={() =>
+                      void fetchActivity(portfolio.wallet_address, activity.next_before)
+                    }
+                    whileHover={{ y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--nav-border)] bg-[var(--surface-soft)] py-3 text-sm font-medium text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                  >
+                    {activityLoading ? 'Loading…' : 'Load more'}
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
 
+        {/* ── Empty State (no wallet queried) ── */}
         {!portfolio && !isLoading && !error && (
           <motion.div
             key="empty"
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="rounded-lg border border-[var(--nav-border)] bg-[var(--surface)] p-8 text-center shadow-2xl shadow-black/10 backdrop-blur-xl sm:p-12"
+            className="rounded-2xl glass p-8 text-center shadow-card sm:p-14"
           >
-            <motion.div
-              className="mx-auto mb-6 flex h-20 w-20 rotate-6 items-center justify-center rounded-lg shadow-2xl shadow-[#9945FF]/30 solana-gradient sm:h-24 sm:w-24"
-              animate={{ rotate: [6, 2, 6], y: [0, -4, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <Sparkles className="h-10 w-10 -rotate-6 text-white sm:h-12 sm:w-12" />
-            </motion.div>
-            <h3 className="mb-3 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              Query ready portfolio view
+            <div className="mx-auto mb-6 flex h-20 w-20 animate-float items-center justify-center rounded-2xl shadow-2xl solana-gradient sm:h-24 sm:w-24 glow-purple">
+              <Sparkles className="h-10 w-10 text-white sm:h-12 sm:w-12" />
+            </div>
+            <h3 className="mb-3 text-2xl font-extrabold tracking-tight text-gradient-heading sm:text-3xl">
+              Ready to explore
             </h3>
-            <p className="mx-auto max-w-md text-lg text-[var(--text-muted)]">
-              Paste an address above and the dashboard will assemble the wallet picture.
+            <p className="mx-auto max-w-md text-base text-[var(--text-secondary)] leading-relaxed">
+              Paste a wallet address above and the dashboard will
+              assemble a complete portfolio picture.
             </p>
           </motion.div>
         )}
